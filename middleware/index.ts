@@ -1,12 +1,26 @@
-import express, {Express, } from 'express';
+import express, { Application } from "express";
+import jwtMiddleware from "./jwt";
+import morgan from "morgan";
+import cors from 'cors';
 
 const middleware = [
-    express.json(),
-    express.urlencoded()
-]
+  // DON'T use in production if I didn't make it clear enough :)
+  // everybody can make a reques
+  cors(),
+  morgan("combined"),
+  express.json(),
+  express.urlencoded({ extended: true }),
+  ...jwtMiddleware.map((m) => m()),
+];
 
-function initMiddleware(app: Express): void {
-
+/**
+ * Initialize all middleware.
+ * @param app express app instance
+ */
+function initMiddleware(app: Application): void {
+  middleware.forEach((m) => app.use(m));
 }
 
-export default 
+export { jwtMiddleware };
+
+export default initMiddleware;

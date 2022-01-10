@@ -1,17 +1,35 @@
-import { Request, Response } from 'express';
 import jwt from "express-jwt";
-import process from 'process';
-// jwt implementation WIP
+import process from "process";
+import { NextFunction, Request, Response } from 'express';
 
-const exceptions = (req: Request) =>
-  req.method === "post" && req.path.match("/login$/");
+// Demo app jwt middleware implementation.
+// Please don't use in prod!!!
 
+/**
+ * Endpoints which we don't check
+ */
+const exceptions = [
+  '/login',
+  // all except get
+  {
+    url: /./,
+    // methods: ['GET']
 
-const jwtMiddleware = (req: Request) => {
-    // check all write && delete operations
-    const shouldCheck = req.method === 'POST' || req.method === 'DELETE';
+    // for testing purposes
+    methods: ['GET', 'POST']
+  }
+];
 
-    if (shouldCheck && !exceptions(req)) {
+// should have issuer, audience, but this is a demo app, so go with the flow
+const jwtMiddleware = () => jwt({
+  secret: process.env.JWT_SECRET as string,
+  algorithms: ["HS256"],
+}).unless({ path: exceptions } as any);
 
-    }
+const errorHandler = () => (err: Error, req: Request, res: Response, next: NextFunction) => {
+  if (err.name === 'UnauthorizedError' ) {
+    res.status(401).send('Invalid token.');
+  }
 }
+
+export default [jwtMiddleware, errorHandler];
