@@ -12,15 +12,20 @@ const exceptions = [
   '/login',
   // all except get
   {
+    url: '/user',
+    methods: ['POST']
+  },
+  {
     url: /./,
-    // methods: ['GET']
+    methods: ['GET']
 
     // for testing purposes
-    methods: ['GET', 'POST']
+    // methods: ['GET', 'POST']
   }
 ];
 
 // should have issuer, audience, but this is a demo app, so go with the flow
+// also currently tokens don't expire
 const jwtMiddleware = () => jwt({
   secret: process.env.JWT_SECRET as string,
   algorithms: ["HS256"],

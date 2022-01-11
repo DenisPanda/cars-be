@@ -7,6 +7,7 @@ const middleware = [
   // DON'T use in production if I didn't make it clear enough :)
   // everybody can make a reques
   cors(),
+  // maybe redundant, better solution to make own function with winston
   morgan("combined"),
   express.json(),
   express.urlencoded({ extended: true }),
