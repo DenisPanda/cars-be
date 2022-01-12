@@ -10,6 +10,7 @@ import Vehicle from "./models/vehicles.model";
 import User from "./models/user.model";
 import _ from 'lodash';
 import { createJWT, hash, compare } from './utils/auth';
+import { Model } from 'mongoose';
 
 const app: Application = express();
 
@@ -31,6 +32,8 @@ try {
 
 
 // --------- LOGIN -------
+
+// === LOGIN USER ===
 app.post("/login", async (req: Request, res: Response): Promise<Response> => {
   let missing = [];
 
@@ -49,6 +52,7 @@ app.post("/login", async (req: Request, res: Response): Promise<Response> => {
       return acc;
     }, [] as string[])
 
+    // not all attributes defined
     if (missing.length) {
       return res.status(400).send({
         message: `Invalid payload. Check: ${JSON.stringify(missing)}`,
@@ -59,6 +63,7 @@ app.post("/login", async (req: Request, res: Response): Promise<Response> => {
 
     const user = await User.findOne({ email: new RegExp(email, 'i') }).exec();
 
+    // user not found
     if (!user) {
       logger.info(`User not found: ${email}`);
 
@@ -69,6 +74,7 @@ app.post("/login", async (req: Request, res: Response): Promise<Response> => {
 
     const valid = compare(password, user.digest);
 
+    // password not valid
     if (!valid) {
       logger.info(`User unauthorized: ${JSON.stringify(body)}`);
 
@@ -99,6 +105,8 @@ app.post("/login", async (req: Request, res: Response): Promise<Response> => {
 
 
 // ------- CREATE USER -------
+
+// === CREATE USER ===
 app.post("/user", async (req: Request, res: Response): Promise<Response> => {
   let missing: string[] = [];
 
@@ -137,8 +145,6 @@ app.post("/user", async (req: Request, res: Response): Promise<Response> => {
 
     const digest = await hash(password);
 
-    console.log("PING PING USER")
-
     // create user
     const user = await new User({ email, digest }).save();
 
@@ -152,6 +158,8 @@ app.post("/user", async (req: Request, res: Response): Promise<Response> => {
     }
 
     logger.info(`User created ${id}`);
+
+    // there should be a confirm user flow
 
     return res.status(201).send({
       message: 'User created! Yaaay!',
@@ -175,18 +183,47 @@ app.post("/user", async (req: Request, res: Response): Promise<Response> => {
 
 
 // ------ VEHICLES --------
+
+// === GET VEHICLES ===
 app.get("/vehicles", async (req: Request, res: Response): Promise<Response> => {
   try {
-    const page = req.get("page") || 1;
-    const limit = req.get("pageSize") || 10;
+    const validKeys = ['make', 'model', 'year'];
+    const page = parseInt((req.get("page") || req.query.page || 1) as string);
+    const limit = parseInt((req.get("pageSize") || req.query.pageSize || 10) as string)
 
-    const result = await Vehicle.paginate({ make: /./ }, {page, limit})
+    let search: [string, string | number | RegExp]  = ['make', /./]
+
+    if (req.query) {
+      // find first value that matches or assign default value
+      const fromParams =
+        Object.entries(
+          _.pick(req.query, validKeys) as { [k: string]: string }
+        ).find(([k, v]) => typeof v === "string" || typeof v === "number") ||
+        null;
+
+        // found value
+        if (fromParams) {
+
+          // only year can be a num
+          search = [
+            fromParams[0],
+            fromParams[0] === 'year' ?
+            parseInt(fromParams[1]) : new RegExp(fromParams[1], 'i')
+          ]
+        }
+    }
+
+    const result = await Vehicle.paginate(
+      { [search[0]]: search[1] },
+      { page, limit }
+    );
 
     logger.verbose('Get vehicles.');
 
     return res.status(200).send({
+      pageSize: limit,
+      page,
       count: result.count,
-      page: result.currentPage,
       hasNextPage: result.hasNextPage,
       hasPrevPage: result.hasPrevPage,
 
@@ -200,6 +237,7 @@ app.get("/vehicles", async (req: Request, res: Response): Promise<Response> => {
   }
 });
 
+// === CREATE VEHICLE ===
 app.post("/vehicles", async (req: Request, res: Response): Promise<Response> => {
   let missing: string[] = [];
 
@@ -256,6 +294,36 @@ app.post("/vehicles", async (req: Request, res: Response): Promise<Response> => 
       });
     }
 
+    logger.error(e);
+
+    return res.status(500).send("Server error.");
+  }
+});
+
+// === SEARCH VEHICLES ===
+app.post("/vehicles/autocomplete", async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const body = req.body;
+
+    const searchQ = body.search as string | number;
+    const qValid = typeof searchQ === 'string' || typeof searchQ === 'number';
+
+
+    if (!qValid) {
+      return res.status(400).send({
+        message: `Invalid payload`,
+      })
+    }
+
+    const data = (await Vehicle.searchFuzzy(searchQ).exec()).reverse();
+
+    logger.verbose(`Search vehicles  ${searchQ}`);
+
+    return res.status(201).send({
+      message: 'Search success!',
+      data
+    })
+  } catch (e) {
     logger.error(e);
 
     return res.status(500).send("Server error.");

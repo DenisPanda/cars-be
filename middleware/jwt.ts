@@ -16,6 +16,10 @@ const exceptions = [
     methods: ['POST']
   },
   {
+    url: '/vehicles/search',
+    methods: ['POST']
+  },
+  {
     url: /./,
     methods: ['GET']
 
