@@ -10,7 +10,6 @@ import Vehicle from "./models/vehicles.model";
 import User from "./models/user.model";
 import _ from 'lodash';
 import { createJWT, hash, compare } from './utils/auth';
-import { Model } from 'mongoose';
 
 const app: Application = express();
 
