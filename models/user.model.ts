@@ -12,7 +12,7 @@ mPaginate.paginate.options = {
 
 const userSchema = new Schema(
   {
-    email: { type: String, unique: true },
+    email: { type: String, unique: true, index: true },
     digest: String,
   },
   { timestamps: true }

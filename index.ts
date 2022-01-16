@@ -6,10 +6,11 @@ import express, { Application, Request, Response } from "express";
 import logger from "./utils/logger";
 import initMiddleware from "./middleware";
 import initDB from "./db";
-import Vehicle from "./models/vehicles.model";
+import Vehicle from "./models/vehicle.model";
 import User from "./models/user.model";
 import _ from 'lodash';
 import { createJWT, hash, compare } from './utils/auth';
+import { PaginateOptions } from "mongoose";
 
 const app: Application = express();
 
@@ -153,6 +154,7 @@ app.post("/user", async (req: Request, res: Response): Promise<Response> => {
 
     // set token to return
     const data = {
+      email,
       token
     }
 
@@ -189,6 +191,8 @@ app.get("/vehicles", async (req: Request, res: Response): Promise<Response> => {
     const validKeys = ['make', 'model', 'year'];
     const page = parseInt((req.get("page") || req.query.page || 1) as string);
     const limit = parseInt((req.get("pageSize") || req.query.pageSize || 10) as string)
+    const sort = req.query.sort as string;
+    const sortOrder = parseInt((req.query.sortOrder || 1) as string);
 
     let search: [string, string | number | RegExp]  = ['make', /./]
 
@@ -212,12 +216,19 @@ app.get("/vehicles", async (req: Request, res: Response): Promise<Response> => {
         }
     }
 
+    const qOpts: PaginateOptions = { page, limit, sort: {year: 1} };
+
+    // add sorting
+    if (sort) {
+      qOpts.sort = { [sort]: sortOrder };
+    }
+
     const result = await Vehicle.paginate(
       { [search[0]]: search[1] },
-      { page, limit }
+      qOpts
     );
 
-    logger.verbose('Get vehicles.');
+    logger.debug('Get vehicles.');
 
     return res.status(200).send({
       pageSize: limit,
@@ -237,7 +248,7 @@ app.get("/vehicles", async (req: Request, res: Response): Promise<Response> => {
 });
 
 // === CREATE VEHICLE ===
-app.post("/vehicles", async (req: Request, res: Response): Promise<Response> => {
+app.post("/vehicle", async (req: Request, res: Response): Promise<Response> => {
   let missing: string[] = [];
 
   try {

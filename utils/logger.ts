@@ -1,3 +1,4 @@
+import { dateLocale, dateConfig } from './../config';
 import winston from "winston";
 
 const logger = winston.createLogger({
@@ -5,10 +6,7 @@ const logger = winston.createLogger({
   format: winston.format.json(),
   defaultMeta: {
     get time() {
-      return Intl.DateTimeFormat("en-US", {
-        dateStyle: "full",
-        timeStyle: "long",
-      }).format(new Date());
+      return Intl.DateTimeFormat(dateLocale, dateConfig).format(new Date());
     },
   },
   transports: [
