@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { JWT_EXP_HOURS } from "../config";
 
 
 export async function hash(pass: string) {
@@ -19,7 +20,7 @@ export async function createJWT(id: string) {
         id,
         iat,
         // set expiration
-        exp: iat + parseInt(process.env.JWT_EXP_HOURS as string) * 3600,
+        exp: iat + JWT_EXP_HOURS * 3600,
       },
       process.env.JWT_SECRET as string,
       { algorithm: "HS256" }
