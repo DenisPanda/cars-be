@@ -43,7 +43,7 @@ Listen to changes. Please **rebuild app** to see changes or start watch ts in an
 ## Deploy
 Deploy app to Heroku. (Please **login into heroku** before)
 
-    npm run watch-node
+    npm run deploy
 
 
 
